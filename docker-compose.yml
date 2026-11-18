@@ -1,0 +1,34 @@
+services:
+  super_ai_editor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: super_ai_editor
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/exports:/app/backend/exports
+      - ./backend/sfx_library:/app/backend/sfx_library
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # Optional integrated Ollama container (start with: docker compose --profile with-ollama up)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: super_ai_editor_ollama
+    restart: unless-stopped
+    profiles:
+      - with-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+volumes:
+  ollama_models:
