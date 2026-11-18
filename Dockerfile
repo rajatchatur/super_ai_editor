@@ -29,6 +29,9 @@ RUN pip install --no-cache-dir -r /app/backend/requirements.txt || true
 COPY backend /app/backend
 COPY frontend/dist /app/frontend/dist
 
+# Ensure all runtime asset and output directories exist
+RUN mkdir -p /app/backend/uploads /app/backend/exports /app/backend/sfx_library /app/frontend/dist/assets
+
 # Pre-generate RealSFX sound library at build time
 RUN python3 -c "import sys; sys.path.insert(0, '/app'); from backend.app.services.realsfx_service import ensure_default_sfx_library; ensure_default_sfx_library()"
 

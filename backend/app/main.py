@@ -54,11 +54,22 @@ app.mount("/static/sfx", StaticFiles(directory=str(SFX_DIR)), name="sfx")
 # Serve built frontend if dist exists
 DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
 if DIST_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="frontend_assets")
+    assets_dir = DIST_DIR / "assets"
+    assets_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="frontend_assets")
+
+    @app.get("/app.js")
+    def serve_app_js():
+        js_file = DIST_DIR / "app.js"
+        if js_file.exists():
+            return FileResponse(js_file, media_type="application/javascript")
+        return {"error": "app.js not found"}
 
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
         requested_file = DIST_DIR / full_path
         if requested_file.exists() and requested_file.is_file():
-            return FileResponse(requested_file)
+            ext = requested_file.suffix.lower()
+            media_type = "application/javascript" if ext == ".js" else ("text/css" if ext == ".css" else "text/html")
+            return FileResponse(requested_file, media_type=media_type)
         return FileResponse(DIST_DIR / "index.html")
