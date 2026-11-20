@@ -173,6 +173,11 @@
 
     <!-- Right: Studio Actions -->
     <div class="flex items-center space-x-2">
+      <button id="btnHeaderUpload" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-editor-surface hover:bg-editor-hover border border-brand-cyan/40 text-brand-cyan flex items-center space-x-1.5 transition">
+        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+        <span>Upload Media</span>
+      </button>
+
       <button id="btnLoadDemo" class="px-3 py-1.5 text-xs font-medium rounded-md bg-editor-surface hover:bg-editor-hover border border-editor-border text-slate-300 flex items-center space-x-1.5 transition">
         <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-amber-400"></i>
         <span>Reset Project</span>
@@ -515,12 +520,17 @@
           </div>
 
           <div class="bg-[#0d121f] p-3 rounded-lg border border-editor-border space-y-3 text-xs">
-            <label class="block border-2 border-dashed border-editor-border hover:border-brand-500 rounded-lg p-4 text-center cursor-pointer transition">
-              <i data-lucide="upload-cloud" class="w-6 h-6 mx-auto text-slate-400 mb-2"></i>
-              <span class="block text-slate-200 font-medium">Drop media or click to upload</span>
-              <span class="block text-[10px] text-slate-500 mt-0.5">MP4, MOV, WAV, MP3, PNG, JPG</span>
+            <label for="mediaFileInput" id="mediaDropZone" class="block border-2 border-dashed border-editor-border hover:border-brand-500 rounded-lg p-5 text-center cursor-pointer transition">
+              <i data-lucide="upload-cloud" class="w-7 h-7 mx-auto text-brand-cyan mb-2"></i>
+              <span class="block text-slate-200 font-bold">Click to choose or drop media</span>
+              <span class="block text-[10px] text-slate-400 mt-1">MP4, MOV, WebM, WAV, MP3, PNG, JPG</span>
               <input id="mediaFileInput" type="file" class="hidden" accept="video/*,audio/*,image/*" />
             </label>
+
+            <span class="text-[11px] font-semibold text-slate-400 block mt-2">Active Media Assets</span>
+            <div id="mediaUploadedList" class="space-y-1.5 max-h-52 overflow-y-auto">
+              <!-- Dynamically populated -->
+            </div>
           </div>
         </div>
 

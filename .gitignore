@@ -13,3 +13,5 @@ backend/uploads/*
 node_modules/
 .DS_Store
 *.log
+# Graphify cache (large binary cache files)
+graphify-out/cache/

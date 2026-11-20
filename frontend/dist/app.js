@@ -1,5 +1,5 @@
 // super_ai_editor — Main Application Script
-// Connects Three.js, Motion Skills, HyperFrames, Whisper, RealSFX, Earshot, and AI Prompt-to-Edit Studio
+// Connects Three.js, Motion Skills, HyperFrames, Whisper, RealSFX, Earshot, Video Upload & AI Prompt-to-Edit Studio
 
 (function() {
   'use strict';
@@ -39,6 +39,244 @@
         { id: 'fx2', sfx_type: 'boom', title: 'Impact Boom', time: 0.9, duration: 2.0, volume: 1.0 },
         { id: 'fx3', sfx_type: 'riser', title: 'Energy Riser', time: 3.2, duration: 2.5, volume: 0.9 }
       ]
+    }
+  };
+
+  // --- HTML5 MEDIA PLAYER (For uploaded video, audio & image files) ---
+  const VideoPlayer = {
+    videoEl: null,
+    imageEl: null,
+    audioEl: null,
+    kind: null,
+    hasVideo: false,
+    hasImage: false,
+    hasAudio: false,
+    init() {
+      if (!this.videoEl) {
+        this.videoEl = document.createElement('video');
+        this.videoEl.crossOrigin = 'anonymous';
+        this.videoEl.playsInline = true;
+        this.videoEl.muted = false;
+        this.videoEl.preload = 'auto';
+
+        this.videoEl.addEventListener('loadedmetadata', () => {
+          this.hasVideo = true;
+          if (this.kind !== 'video') return;
+          if (this.videoEl.duration && isFinite(this.videoEl.duration)) {
+            state.duration = Math.max(1.0, this.videoEl.duration);
+            const totalEl = document.getElementById('totalTimecode');
+            if (totalEl) totalEl.innerText = Timeline.formatSMPTE(state.duration);
+            Timeline.renderRuler();
+            Timeline.renderClips();
+          }
+        });
+      }
+      if (!this.audioEl) {
+        this.audioEl = new Audio();
+        this.audioEl.preload = 'auto';
+        this.audioEl.addEventListener('loadedmetadata', () => {
+          if (this.audioEl.duration && isFinite(this.audioEl.duration)) {
+            state.duration = Math.max(1.0, this.audioEl.duration);
+            const totalEl = document.getElementById('totalTimecode');
+            if (totalEl) totalEl.innerText = Timeline.formatSMPTE(state.duration);
+            Timeline.renderRuler();
+            Timeline.renderClips();
+          }
+        });
+      }
+    },
+    reset() {
+      this.hasVideo = false;
+      this.hasImage = false;
+      this.hasAudio = false;
+      this.kind = null;
+      if (this.videoEl) this.videoEl.pause();
+      if (this.audioEl) this.audioEl.pause();
+    },
+    loadSource(src, filename, kind) {
+      this.init();
+      this.reset();
+      this.kind = kind || 'video';
+      const cleanName = filename || 'Uploaded Media';
+
+      if (this.kind === 'image') {
+        this.imageEl = new Image();
+        this.imageEl.onload = () => { this.hasImage = true; };
+        this.imageEl.src = src;
+      } else if (this.kind === 'audio') {
+        this.audioEl.src = src;
+        this.audioEl.load();
+        this.hasAudio = true;
+        state.duration = 6.0;
+      } else {
+        this.videoEl.src = src;
+        this.videoEl.load();
+        this.hasVideo = true;
+      }
+
+      state.tracks.video = [{
+        id: 'v_user_' + Date.now(),
+        title: cleanName,
+        filename: cleanName.replace(/\s+/g, '_'),
+        start: 0,
+        duration: state.duration || 6.0,
+        color: '#2563eb'
+      }];
+      Timeline.renderRuler();
+      Timeline.renderClips();
+    },
+    syncTime(time) {
+      if (this.kind === 'audio') {
+        if (!this.hasAudio || !this.audioEl) return;
+        if (Math.abs(this.audioEl.currentTime - time) > 0.25) {
+          this.audioEl.currentTime = Math.min(time, this.audioEl.duration || time);
+        }
+        this.audioEl.playbackRate = state.playbackSpeed;
+        this.audioEl.volume = state.volume;
+        if (state.isPlaying && this.audioEl.paused) {
+          this.audioEl.play().catch(() => {});
+        } else if (!state.isPlaying && !this.audioEl.paused) {
+          this.audioEl.pause();
+        }
+        return;
+      }
+      if (!this.hasVideo || !this.videoEl) return;
+      if (Math.abs(this.videoEl.currentTime - time) > 0.15) {
+        this.videoEl.currentTime = time;
+      }
+      this.videoEl.playbackRate = state.playbackSpeed;
+      this.videoEl.volume = state.volume;
+      if (state.isPlaying && this.videoEl.paused) {
+        this.videoEl.play().catch(() => {});
+      } else if (!state.isPlaying && !this.videoEl.paused) {
+        this.videoEl.pause();
+      }
+    }
+  };
+
+  // --- MEDIA MANAGER (MP4 File Uploads & Drag-and-Drop) ---
+  const MediaManager = {
+    init() {
+      const input = document.getElementById('mediaFileInput');
+      const dropZone = document.getElementById('mediaDropZone');
+      const headerUploadBtn = document.getElementById('btnHeaderUpload');
+
+      if (headerUploadBtn && input) {
+        headerUploadBtn.addEventListener('click', () => input.click());
+      }
+
+      if (input) {
+        input.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            this.handleFileUpload(e.target.files[0]);
+          }
+        });
+      }
+
+      const targetZones = [dropZone, document.getElementById('playerStage')].filter(Boolean);
+      targetZones.forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('ring-2', 'ring-brand-cyan');
+        });
+        zone.addEventListener('dragleave', () => {
+          zone.classList.remove('ring-2', 'ring-brand-cyan');
+        });
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('ring-2', 'ring-brand-cyan');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            this.handleFileUpload(e.dataTransfer.files[0]);
+          }
+        });
+      });
+    },
+
+    async handleFileUpload(file) {
+      if (!file) return;
+
+      const localKind = (file.type || '').startsWith('audio/')
+        ? 'audio'
+        : ((file.type || '').startsWith('image/') ? 'image' : 'video');
+
+      // Preview locally while the server stores the file.
+      const objectUrl = URL.createObjectURL(file);
+      VideoPlayer.loadSource(objectUrl, file.name, localKind);
+
+      const statusEl = document.getElementById('promptStatusLog');
+      const showUploadStatus = (message, kind) => {
+        if (!statusEl) return;
+        const status = document.createElement('div');
+        status.className = kind === 'error'
+          ? 'p-1.5 rounded bg-red-950/60 border border-red-500/40 text-red-300'
+          : (kind === 'success'
+            ? 'p-1.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+            : 'p-1.5 rounded bg-blue-950/60 border border-blue-500/40 text-blue-300');
+        status.textContent = message;
+        statusEl.replaceChildren(status);
+      };
+      showUploadStatus(`Previewing ${file.name} locally; uploading to the server…`, 'pending');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/media/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) {
+          let detail = `HTTP ${res.status}`;
+          try {
+            const errorData = await res.json();
+            detail = errorData.detail || errorData.error || detail;
+          } catch (_) {}
+          throw new Error(detail);
+        }
+
+        const data = await res.json();
+        if (!data.filename || !data.url) {
+          throw new Error('The server response is missing the uploaded media URL or filename.');
+        }
+
+        // Load the persisted copy so server-backed features use the stored filename.
+        VideoPlayer.loadSource(data.url, data.filename, data.kind || localKind);
+        URL.revokeObjectURL(objectUrl);
+        if (data.duration && isFinite(data.duration) && data.duration > 0) {
+          state.duration = data.duration;
+          const durEl = document.getElementById('totalTimecode');
+          if (durEl) durEl.innerText = Timeline.formatSMPTE(state.duration);
+          Timeline.renderRuler();
+          Timeline.renderClips();
+        }
+        this.addMediaBinItem(data.filename, data.kind || localKind);
+        const kindLabel = (data.kind || localKind || 'media');
+        showUploadStatus(`✔ ${kindLabel} uploaded and synced (${data.width}×${data.height} • ${data.duration}s).`, 'success');
+      } catch (err) {
+        console.warn('Media upload failed:', err);
+        showUploadStatus(`Upload failed: ${err.message || 'server unavailable'}. Local preview is still available, but the file was not synced to the server.`, 'error');
+      }
+    },
+
+    addMediaBinItem(name, kind) {
+      const container = document.getElementById('mediaUploadedList');
+      if (!container) return;
+      const icon = kind === 'audio' ? 'music' : (kind === 'image' ? 'image' : 'video');
+      const div = document.createElement('div');
+      div.className = 'media-bin-item p-2 rounded bg-editor-surface border border-editor-border hover:border-brand-500 flex items-center justify-between';
+      div.innerHTML = `
+        <div class="flex items-center space-x-2 truncate">
+          <div class="w-8 h-8 rounded bg-blue-950 flex items-center justify-center text-brand-cyan shrink-0">
+            <i data-lucide="${icon}" class="w-4 h-4"></i>
+          </div>
+          <div class="truncate">
+            <span class="font-medium text-white block text-xs truncate">${name}</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Active on Track V1</span>
+          </div>
+        </div>
+        <span class="text-[10px] text-brand-cyan font-bold px-2 py-0.5 rounded bg-brand-cyan/20">Active</span>
+      `;
+      container.prepend(div);
+      lucide.createIcons();
     }
   };
 
@@ -268,7 +506,7 @@
     }
   };
 
-  // --- PROCEDURAL BASE VIDEO RENDERER ---
+  // --- BASE VIDEO & PROCEDURAL CANVAS RENDERER ---
   const VideoRenderer = {
     canvas: null,
     ctx: null,
@@ -281,39 +519,50 @@
       const w = this.canvas.width;
       const h = this.canvas.height;
 
-      const grad = this.ctx.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, '#090d16');
-      grad.addColorStop(0.5, '#0f172a');
-      grad.addColorStop(1, '#060a12');
-      this.ctx.fillStyle = grad;
-      this.ctx.fillRect(0, 0, w, h);
+      // Sync HTML5 video playback
+      VideoPlayer.syncTime(time);
 
-      this.ctx.strokeStyle = 'rgba(59, 130, 246, 0.12)';
-      this.ctx.lineWidth = 1;
-      const gridY = h * 0.65;
-      const perspectiveOffset = (time * 80) % 60;
+      // If uploaded media is available and ready, draw real frames!
+      if (VideoPlayer.hasVideo && VideoPlayer.videoEl && VideoPlayer.videoEl.readyState >= 2) {
+        this.ctx.drawImage(VideoPlayer.videoEl, 0, 0, w, h);
+      } else if (VideoPlayer.hasImage && VideoPlayer.imageEl && VideoPlayer.imageEl.complete) {
+        this.ctx.drawImage(VideoPlayer.imageEl, 0, 0, w, h);
+      } else {
+        // Fallback procedural studio background
+        const grad = this.ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, '#090d16');
+        grad.addColorStop(0.5, '#0f172a');
+        grad.addColorStop(1, '#060a12');
+        this.ctx.fillStyle = grad;
+        this.ctx.fillRect(0, 0, w, h);
 
-      for (let y = gridY; y < h; y += 24) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, y);
-        this.ctx.lineTo(w, y);
-        this.ctx.stroke();
+        this.ctx.strokeStyle = 'rgba(59, 130, 246, 0.12)';
+        this.ctx.lineWidth = 1;
+        const gridY = h * 0.65;
+        const perspectiveOffset = (time * 80) % 60;
+
+        for (let y = gridY; y < h; y += 24) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, y);
+          this.ctx.lineTo(w, y);
+          this.ctx.stroke();
+        }
+
+        const centerX = w / 2;
+        for (let x = -w; x <= w * 2; x += 120) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(centerX, gridY);
+          this.ctx.lineTo(x + perspectiveOffset, h);
+          this.ctx.stroke();
+        }
+
+        const glow = this.ctx.createRadialGradient(centerX, h * 0.5, 20, centerX, h * 0.5, 450);
+        glow.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+        glow.addColorStop(0.5, 'rgba(139, 92, 246, 0.12)');
+        glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this.ctx.fillStyle = glow;
+        this.ctx.fillRect(0, 0, w, h);
       }
-
-      const centerX = w / 2;
-      for (let x = -w; x <= w * 2; x += 120) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(centerX, gridY);
-        this.ctx.lineTo(x + perspectiveOffset, h);
-        this.ctx.stroke();
-      }
-
-      const glow = this.ctx.createRadialGradient(centerX, h * 0.5, 20, centerX, h * 0.5, 450);
-      glow.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
-      glow.addColorStop(0.5, 'rgba(139, 92, 246, 0.12)');
-      glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      this.ctx.fillStyle = glow;
-      this.ctx.fillRect(0, 0, w, h);
     }
   };
 
@@ -591,16 +840,16 @@
     if (state.isPlaying) AudioEngine.init();
   }
 
-  // --- AI PROMPT-TO-EDIT ENGINE (Core Feature) ---
+  // --- AI PROMPT-TO-EDIT ENGINE ---
   const PromptDirector = {
     async executePrompt(promptText) {
       if (!promptText || !promptText.trim()) return;
       promptText = promptText.trim();
 
-      // 1. Snapshot previous state for instant Undo
+      // Snapshot previous state for instant Undo
       state.historyStack.push(JSON.parse(JSON.stringify(state.tracks)));
 
-      // 2. Add User Message to Chat & Logs
+      // Add User Message to Chat & Logs
       this.appendUserMessage(promptText);
 
       // Show processing badge
@@ -631,7 +880,6 @@
         }
       } catch (err) {
         console.warn('Using client-side fallback orchestrator:', err);
-        // Fallback orchestrator
         const fallbackData = {
           reply: `✨ Auto-edited video based on: "${promptText}". Orchestrated Three.js 3D title, Whisper Hormozi subtitles, RealSFX whoosh/boom audio, and Earshot ducking.`,
           tools_used: ['three_js', 'whisper', 'realsfx', 'motion_skills', 'earshot'],
@@ -658,9 +906,8 @@
     applyActionsAndRender(data, promptText) {
       const actions = data.timeline_actions || [];
       const tools = data.tools_used || ['three_js', 'whisper', 'realsfx'];
-      const steps = data.execution_steps || [];
 
-      // Wipe current non-video tracks if full edit requested
+      // Clear existing non-video overlay tracks if full edit requested
       const isOmni = promptText.toLowerCase().includes('auto') || promptText.toLowerCase().includes('everything') || promptText.toLowerCase().includes('full') || promptText.toLowerCase().includes('trailer');
       if (isOmni) {
         state.tracks.three_js = [];
@@ -718,14 +965,10 @@
         }
       });
 
-      // Update UI Views
       Timeline.renderClips();
       UI.renderSubtitlesList();
-
-      // Append detailed assistant card to chat
       this.appendAssistantCard(data);
 
-      // Update status log
       const logEl = document.getElementById('promptStatusLog');
       if (logEl) {
         logEl.innerHTML = `
@@ -735,7 +978,6 @@
         `;
       }
 
-      // Automatically rewind and play preview to showcase the result!
       state.currentTime = 0.0;
       Timeline.updatePlayhead();
       togglePlay(true);
@@ -882,6 +1124,7 @@
       try {
         const payload = {
           duration: state.duration,
+          video_clips: state.tracks.video,
           subtitles: state.tracks.subtitles,
           sfx_tracks: state.tracks.sfx,
           subtitle_style: document.getElementById('captionStyleSelect')?.value || 'hormozi'
@@ -965,7 +1208,6 @@
         state.volume = parseFloat(e.target.value);
       });
 
-      // Split clip button
       document.getElementById('btnSplitClip')?.addEventListener('click', () => {
         const t = state.currentTime;
         const vClip = state.tracks.video.find(c => t > c.start && t < (c.start + c.duration));
@@ -983,7 +1225,6 @@
         }
       });
 
-      // Delete clip button
       document.getElementById('btnDeleteClip')?.addEventListener('click', () => {
         if (!state.selectedClipId) return;
         for (const key in state.tracks) {
@@ -993,7 +1234,6 @@
         Timeline.renderClips();
       });
 
-      // Keyboard shortcuts
       window.addEventListener('keydown', (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         if (e.code === 'Space') {
@@ -1235,6 +1475,8 @@
 
   // --- INITIALIZATION ---
   window.addEventListener('DOMContentLoaded', () => {
+    VideoPlayer.init();
+    MediaManager.init();
     VideoRenderer.init();
     ThreeEngine.init();
     OverlayManager.init();

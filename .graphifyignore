@@ -1,0 +1,12 @@
+# Graphify ignore rules — exclude non-code and binary artifacts
+backend/exports/
+backend/uploads/
+graphify-out/cache/
+frontend/dist/assets/
+node_modules/
+__pycache__/
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.pyc

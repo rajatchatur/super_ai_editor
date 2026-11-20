@@ -1,73 +1,46 @@
 import shutil
-import subprocess
-from pathlib import Path
+import time
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from backend.app.config import UPLOAD_DIR
+from backend.app.media_utils import (
+    build_media_response,
+    guess_media_type,
+    sanitize_filename,
+)
 
 router = APIRouter(prefix="/api/media", tags=["Media Bin & Storage"])
 
+
 @router.post("/upload")
 async def upload_media_file(file: UploadFile = File(...)):
-    """Upload media file, extract metadata using ffprobe, and store in uploads directory."""
-    filename = file.filename
-    clean_name = filename.replace(" ", "_")
+    """Upload video, audio or image, extract metadata and store it in the uploads directory."""
+    clean_name = sanitize_filename(file.filename)
     dest_path = UPLOAD_DIR / clean_name
-    
+
+    # Never overwrite previously uploaded media.
+    if dest_path.exists():
+        dest_path = UPLOAD_DIR / f"{dest_path.stem}_{int(time.time() * 1000)}{dest_path.suffix}"
+        clean_name = dest_path.name
+
     with open(dest_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
-    # Probe duration and dimensions
-    duration = 5.0
-    width = 1920
-    height = 1080
-    fps = 30.0
-    has_audio = False
-    
-    try:
-        cmd = [
-            "ffprobe", "-v", "quiet",
-            "-print_format", "json",
-            "-show_format", "-show_streams",
-            str(dest_path)
-        ]
-        out = subprocess.check_output(cmd)
-        import json
-        info = json.loads(out)
-        duration = float(info.get("format", {}).get("duration", 5.0))
-        
-        for st in info.get("streams", []):
-            if st.get("codec_type") == "video":
-                width = int(st.get("width", 1920))
-                height = int(st.get("height", 1080))
-                r_fps = st.get("r_frame_rate", "30/1")
-                if "/" in r_fps:
-                    n, d = r_fps.split("/")
-                    fps = round(float(n) / float(d), 2)
-            elif st.get("codec_type") == "audio":
-                has_audio = True
-    except Exception:
-        pass
-        
-    return {
-        "filename": clean_name,
-        "url": f"/api/media/file/{clean_name}",
-        "duration": round(duration, 2),
-        "width": width,
-        "height": height,
-        "fps": fps,
-        "has_audio": has_audio
-    }
+
+    if dest_path.stat().st_size == 0:
+        dest_path.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    return build_media_response(clean_name, dest_path, file.content_type)
+
 
 @router.get("/file/{filename}")
 def serve_media_file(filename: str):
-    """Serve uploaded file."""
-    path = UPLOAD_DIR / filename
-    if not path.exists():
+    """Serve uploaded video, audio or image with the correct MIME type."""
+    path = UPLOAD_DIR / sanitize_filename(filename)
+    if not path.exists() or not path.is_file():
         raise HTTPException(status_code=404, detail="Media file not found.")
-    ext = path.suffix.lower()
-    media_type = "video/mp4" if ext in [".mp4", ".mov", ".mkv"] else ("audio/wav" if ext == ".wav" else "application/octet-stream")
-    return FileResponse(path, media_type=media_type)
+    return FileResponse(path, media_type=guess_media_type(path))
+
 
 @router.get("/demo_project")
 def get_demo_project():

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import time
 from pathlib import Path
 
 # Add project root to sys.path
@@ -25,6 +26,12 @@ def run_standalone():
     from backend.app.services.ollama_service import check_ollama_status, ask_ollama_copilot
     from backend.app.services.render_service import render_timeline_project
     from backend.app.routers.media import get_demo_project
+    from backend.app.media_utils import (
+        build_media_response,
+        guess_media_type,
+        parse_multipart,
+        sanitize_filename,
+    )
     from backend.app.config import HOST, PORT, SFX_DIR, EXPORT_DIR, UPLOAD_DIR
 
     ensure_default_sfx_library()
@@ -56,6 +63,53 @@ def run_standalone():
                 return json.loads(raw) if raw else {}
             except Exception:
                 return {}
+
+        def _serve_media_file(self, fp):
+            """Stream a media file with HTTP Range support so video/audio can seek."""
+            total = fp.stat().st_size
+            media_type = guess_media_type(fp)
+            start, end = 0, total - 1
+            status = 200
+
+            range_header = self.headers.get("Range", "")
+            if range_header.startswith("bytes="):
+                rng = range_header.split("=", 1)[1].split(",", 1)[0].strip()
+                first, _, last = rng.partition("-")
+                try:
+                    if first:
+                        start = int(first)
+                        end = int(last) if last else total - 1
+                    elif last:
+                        start = max(0, total - int(last))
+                    if start >= total or end < start:
+                        self.send_response(416)
+                        self.send_header("Content-Range", f"bytes */{total}")
+                        self._send_cors()
+                        self.end_headers()
+                        return
+                    end = min(end, total - 1)
+                    status = 206
+                except ValueError:
+                    start, end, status = 0, total - 1, 200
+
+            length = end - start + 1
+            self.send_response(status)
+            self.send_header("Content-Type", media_type)
+            self.send_header("Content-Length", str(length))
+            self.send_header("Accept-Ranges", "bytes")
+            if status == 206:
+                self.send_header("Content-Range", f"bytes {start}-{end}/{total}")
+            self._send_cors()
+            self.end_headers()
+            with open(fp, "rb") as handle:
+                handle.seek(start)
+                remaining = length
+                while remaining > 0:
+                    chunk = handle.read(min(65536, remaining))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    remaining -= len(chunk)
 
         def do_GET(self):
             url = urllib.parse.urlparse(self.path)
@@ -100,6 +154,13 @@ def run_standalone():
                 self._send_json(check_ollama_status())
             elif path == "/api/media/demo_project":
                 self._send_json(get_demo_project())
+            elif path.startswith("/api/media/file/"):
+                fn = sanitize_filename(path.split("/")[-1])
+                fp = UPLOAD_DIR / fn
+                if fp.exists() and fp.is_file():
+                    self._serve_media_file(fp)
+                else:
+                    self._send_json({"error": "Media file not found"}, 404)
             elif path.startswith("/api/render/download/"):
                 fn = path.split("/")[-1]
                 fp = EXPORT_DIR / fn
@@ -143,6 +204,32 @@ def run_standalone():
         def do_POST(self):
             url = urllib.parse.urlparse(self.path)
             path = url.path
+
+            if path == "/api/media/upload":
+                content_type = self.headers.get("Content-Type", "")
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length) if length > 0 else b""
+
+                parsed = parse_multipart(body, content_type)
+                if parsed is None:
+                    self._send_json({"error": "No file uploaded"}, 400)
+                    return
+
+                filename, declared_type, file_bytes = parsed
+                if not file_bytes:
+                    self._send_json({"error": "No file uploaded"}, 400)
+                    return
+
+                clean_name = sanitize_filename(filename)
+                dest_path = UPLOAD_DIR / clean_name
+                if dest_path.exists():
+                    dest_path = UPLOAD_DIR / f"{dest_path.stem}_{int(time.time() * 1000)}{dest_path.suffix}"
+                    clean_name = dest_path.name
+
+                dest_path.write_bytes(file_bytes)
+                self._send_json(build_media_response(clean_name, dest_path, declared_type))
+                return
+
             payload = self._read_json()
 
             if path == "/api/realsfx/generate":

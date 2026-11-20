@@ -1,0 +1,194 @@
+{
+  "backend/app/config.py": {
+    "mtime": 1795031257.4999397,
+    "seen": 1795159024.381484,
+    "ast_hash": "fc956308fefcd5e140e5202823fb58fd",
+    "semantic_hash": "fc956308fefcd5e140e5202823fb58fd"
+  },
+  "backend/app/main.py": {
+    "mtime": 1795034950.343584,
+    "seen": 1795159024.381488,
+    "ast_hash": "5e4d89b63be5645efe2248c44c777551",
+    "semantic_hash": "5e4d89b63be5645efe2248c44c777551"
+  },
+  "backend/app/routers/earshot_router.py": {
+    "mtime": 1795031527.868924,
+    "seen": 1795159024.38149,
+    "ast_hash": "b41a87132ca1c880583c1045d725d506",
+    "semantic_hash": "b41a87132ca1c880583c1045d725d506"
+  },
+  "backend/app/routers/health.py": {
+    "mtime": 1795031506.7937763,
+    "seen": 1795159024.381491,
+    "ast_hash": "f2d9b802378e03909017f257ec055acf",
+    "semantic_hash": "f2d9b802378e03909017f257ec055acf"
+  },
+  "backend/app/routers/hyperframes_router.py": {
+    "mtime": 1795031534.430891,
+    "seen": 1795159024.381492,
+    "ast_hash": "3a0c85233ed311c61a151c30e30e20a5",
+    "semantic_hash": "3a0c85233ed311c61a151c30e30e20a5"
+  },
+  "backend/app/routers/media.py": {
+    "mtime": 1795031560.7165687,
+    "seen": 1795159024.381492,
+    "ast_hash": "0623a7f9fb99b2bdd37ba26a2f7bc16c",
+    "semantic_hash": "0623a7f9fb99b2bdd37ba26a2f7bc16c"
+  },
+  "backend/app/routers/ollama_router.py": {
+    "mtime": 1795031539.2900305,
+    "seen": 1795159024.381493,
+    "ast_hash": "080f3b795de8ff0adb395f62a9847c5b",
+    "semantic_hash": "080f3b795de8ff0adb395f62a9847c5b"
+  },
+  "backend/app/routers/realsfx_router.py": {
+    "mtime": 1795031517.492593,
+    "seen": 1795159024.381494,
+    "ast_hash": "e909b7c894fcb8ddd7e81922ba20b6e5",
+    "semantic_hash": "e909b7c894fcb8ddd7e81922ba20b6e5"
+  },
+  "backend/app/routers/render_router.py": {
+    "mtime": 1795031546.5233128,
+    "seen": 1795159024.381494,
+    "ast_hash": "af68b8c0036d5cbfe6a4fb902636f52b",
+    "semantic_hash": "af68b8c0036d5cbfe6a4fb902636f52b"
+  },
+  "backend/app/routers/whisper_router.py": {
+    "mtime": 1795031512.0793777,
+    "seen": 1795159024.381495,
+    "ast_hash": "3b6322dcd57dac65d5d1f2b2f7e46148",
+    "semantic_hash": "3b6322dcd57dac65d5d1f2b2f7e46148"
+  },
+  "backend/app/services/earshot_service.py": {
+    "mtime": 1795031334.2839293,
+    "seen": 1795159024.381496,
+    "ast_hash": "d3c96d5a94928992140525d80522c894",
+    "semantic_hash": "d3c96d5a94928992140525d80522c894"
+  },
+  "backend/app/services/hyperframes_service.py": {
+    "mtime": 1795031354.1623023,
+    "seen": 1795159024.3814971,
+    "ast_hash": "8ac050b150eb10cd08e8c0b7b151748e",
+    "semantic_hash": "8ac050b150eb10cd08e8c0b7b151748e"
+  },
+  "backend/app/services/ollama_service.py": {
+    "mtime": 1795034286.1758738,
+    "seen": 1795159024.381498,
+    "ast_hash": "fa7b1b986ac621fe19c6d0689e182bde",
+    "semantic_hash": "fa7b1b986ac621fe19c6d0689e182bde"
+  },
+  "backend/app/services/realsfx_service.py": {
+    "mtime": 1795031302.4505439,
+    "seen": 1795159024.381498,
+    "ast_hash": "71519dde1070ce1c9ff00427e2163e47",
+    "semantic_hash": "71519dde1070ce1c9ff00427e2163e47"
+  },
+  "backend/app/services/render_service.py": {
+    "mtime": 1795031488.1013553,
+    "seen": 1795159024.3814988,
+    "ast_hash": "8145204110cd840534b6e108b74ca284",
+    "semantic_hash": "8145204110cd840534b6e108b74ca284"
+  },
+  "backend/app/services/system_detector.py": {
+    "mtime": 1795031272.1465728,
+    "seen": 1795159024.3815,
+    "ast_hash": "1aa32d54b18035c482e33ef8bdd0a78d",
+    "semantic_hash": "1aa32d54b18035c482e33ef8bdd0a78d"
+  },
+  "backend/app/services/whisper_service.py": {
+    "mtime": 1795031371.054318,
+    "seen": 1795159024.3815,
+    "ast_hash": "6fe90cb376b017f44b5efb640c2bb72a",
+    "semantic_hash": "6fe90cb376b017f44b5efb640c2bb72a"
+  },
+  "backend/run.py": {
+    "mtime": 1795035623.864943,
+    "seen": 1795159024.381501,
+    "ast_hash": "f7bd9ebc94e65b189010ab9baa050b93",
+    "semantic_hash": "f7bd9ebc94e65b189010ab9baa050b93"
+  },
+  "backend/tests/test_all_services.py": {
+    "mtime": 1795031604.1547368,
+    "seen": 1795159024.381502,
+    "ast_hash": "bf466ba782b2178137d93ee7a1c216c3",
+    "semantic_hash": "bf466ba782b2178137d93ee7a1c216c3"
+  },
+  "docker-compose.yml": {
+    "mtime": 1795031869.4340377,
+    "seen": 1795159024.3815029,
+    "ast_hash": "d7fb9a77860d1d69178d3cb37f1c218a",
+    "semantic_hash": "d7fb9a77860d1d69178d3cb37f1c218a"
+  },
+  "frontend/package.json": {
+    "mtime": 1795031838.924551,
+    "seen": 1795159024.3815029,
+    "ast_hash": "524af0c698ef27cd8481446badd3e1cc",
+    "semantic_hash": "524af0c698ef27cd8481446badd3e1cc"
+  },
+  "frontend/src/types/index.ts": {
+    "mtime": 1795031854.0220532,
+    "seen": 1795159024.381504,
+    "ast_hash": "a6a203144adc1001ba6666ef15b7da0f",
+    "semantic_hash": "a6a203144adc1001ba6666ef15b7da0f"
+  },
+  "frontend/tsconfig.json": {
+    "mtime": 1795031843.5584037,
+    "seen": 1795159024.381505,
+    "ast_hash": "6b0318b9b75bbb74c7893a0e5ebfd76a",
+    "semantic_hash": "6b0318b9b75bbb74c7893a0e5ebfd76a"
+  },
+  "frontend/vite.config.ts": {
+    "mtime": 1795031847.53259,
+    "seen": 1795159024.381506,
+    "ast_hash": "cb13b42a30bb623861a4206aec775d67",
+    "semantic_hash": "cb13b42a30bb623861a4206aec775d67"
+  },
+  "start.sh": {
+    "mtime": 1795031888.5604508,
+    "seen": 1795159024.381506,
+    "ast_hash": "991ee7747c3c68dd411b00753817f737",
+    "semantic_hash": "991ee7747c3c68dd411b00753817f737"
+  },
+  "verify_system.py": {
+    "mtime": 1795031921.438776,
+    "seen": 1795159024.3815072,
+    "ast_hash": "8f60b03aefd80b19e8e17679ed93db7b",
+    "semantic_hash": "8f60b03aefd80b19e8e17679ed93db7b"
+  },
+  "backend/sfx_library/boom.wav": {
+    "mtime": 1795031306.170256,
+    "seen": 1795159024.381508,
+    "ast_hash": "8cbbc63b1072889fe13af84e9d3cc64e",
+    "semantic_hash": "8cbbc63b1072889fe13af84e9d3cc64e"
+  },
+  "backend/sfx_library/glitch.wav": {
+    "mtime": 1795031306.3313596,
+    "seen": 1795159024.381509,
+    "ast_hash": "1cc90dce9ffb2e717e1a5d9316b87b93",
+    "semantic_hash": "1cc90dce9ffb2e717e1a5d9316b87b93"
+  },
+  "backend/sfx_library/laser.wav": {
+    "mtime": 1795031306.3096726,
+    "seen": 1795159024.381509,
+    "ast_hash": "6cc48945cefedd07e9b3bf672d3e133e",
+    "semantic_hash": "6cc48945cefedd07e9b3bf672d3e133e"
+  },
+  "backend/sfx_library/pop.wav": {
+    "mtime": 1795031306.313935,
+    "seen": 1795159024.3815098,
+    "ast_hash": "327975c74360d7687422badb2f99f9ba",
+    "semantic_hash": "327975c74360d7687422badb2f99f9ba"
+  },
+  "backend/sfx_library/riser.wav": {
+    "mtime": 1795031306.2951722,
+    "seen": 1795159024.381511,
+    "ast_hash": "6c0583f21344fd31ecd4c8d582f69e9f",
+    "semantic_hash": "6c0583f21344fd31ecd4c8d582f69e9f"
+  },
+  "backend/sfx_library/whoosh.wav": {
+    "mtime": 1795031306.052555,
+    "seen": 1795159024.381511,
+    "ast_hash": "79fb158e9eedad63a68cb1d6334bb1a3",
+    "semantic_hash": "79fb158e9eedad63a68cb1d6334bb1a3"
+  }
+}
